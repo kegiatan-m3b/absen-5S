@@ -295,7 +295,23 @@
         </nav>
     </div>
 
-    <!-- MODALS -->
+    <!-- MODAL FOTO VIEW -->
+    <div id="imageModal" class="fixed inset-0 z-[800] bg-black/90 backdrop-blur-sm hidden items-center justify-center p-4 flex-col">
+        <button onclick="closeImageModal()" class="absolute top-4 right-4 text-white bg-white/20 hover:bg-white/40 rounded-full w-12 h-12 flex items-center justify-center backdrop-blur-md transition-all z-50">
+            <i class="fas fa-times text-2xl"></i>
+        </button>
+        <div class="w-full max-w-lg rounded-2xl overflow-hidden flex justify-center items-center relative min-h-[300px]">
+            <div id="imageLoading" class="absolute inset-0 flex items-center justify-center text-white">
+                <i class="fas fa-spinner fa-spin text-4xl"></i>
+            </div>
+            <img id="previewImage" src="" class="w-full h-auto max-h-[80vh] object-contain rounded-2xl relative z-10 hidden" onload="document.getElementById('imageLoading').classList.add('hidden'); this.classList.remove('hidden');" onerror="document.getElementById('imageLoading').innerHTML='<span class=\'text-sm\'>Gagal memuat gambar</span>'">
+        </div>
+        <a id="downloadImageBtn" href="" target="_blank" class="mt-6 bg-emerald-600 text-white px-8 py-3 rounded-xl font-bold text-sm shadow-lg flex items-center gap-2 active:scale-95 transition-all">
+            <i class="fas fa-external-link-alt"></i> Buka Ukuran Penuh
+        </a>
+    </div>
+
+    <!-- MODAL PEGAWAI & PERMIT -->
     <div id="userModal" class="fixed inset-0 z-[700] bg-black/60 backdrop-blur-sm hidden items-center justify-center p-6">
         <div class="bg-white w-full max-w-sm rounded-[2.5rem] p-8 space-y-4 shadow-2xl">
             <h3 id="modalTitle" class="text-xl font-black text-gray-900">Data Pegawai</h3>
@@ -403,6 +419,36 @@
                 if (saved) { user = JSON.parse(saved); setupApp(); }
             } catch(err) {}
         };
+
+        // FUNGSI POP-UP FOTO
+        function openImageModal(url) {
+            if (!url) return;
+            var modal = document.getElementById('imageModal');
+            var img = document.getElementById('previewImage');
+            var loader = document.getElementById('imageLoading');
+            var btn = document.getElementById('downloadImageBtn');
+            
+            img.src = ''; 
+            img.classList.add('hidden');
+            loader.classList.remove('hidden');
+            loader.innerHTML = '<i class="fas fa-spinner fa-spin text-4xl"></i>';
+            
+            // Konversi Link Drive agar bisa diakses langsung via img tag
+            var directUrl = url;
+            var match = url.match(/\/d\/(.*?)\//);
+            if (match && match[1]) {
+                directUrl = 'https://drive.google.com/uc?id=' + match[1];
+            }
+            
+            img.src = directUrl;
+            btn.href = url; // Link asli untuk tombol download
+            modal.classList.replace('hidden', 'flex');
+        }
+
+        function closeImageModal() {
+            document.getElementById('imageModal').classList.replace('flex', 'hidden');
+            document.getElementById('previewImage').src = '';
+        }
 
         function loadGtkNames() {
             var sel = document.getElementById('loginName');
@@ -704,9 +750,6 @@
             }
         }
 
-        // ===============================================
-        // FUNGSI REKAP MINGGUAN DINAMIS DENGAN TOTAL
-        // ===============================================
         function loadRekap() {
             var mInput = document.getElementById('rekapMonth').value;
             if(!mInput) {
@@ -780,7 +823,7 @@
                                     '<tbody>' + tbody + '</tbody>' +
                                     '</table></div>' + 
                                     '<div class="p-3 text-[9px] text-gray-500 bg-gray-50 border-t border-gray-200 font-bold">' +
-                                    'Ket: H (Hadir), I (Izin), S (Sakit), TK (Tanpa Keterangan).<br>Tanda (-) artinya pada minggu tersebut tidak ada jadwal piket untuk guru bersangkutan.</div>';
+                                    'Ket: H (Hadir), I (Izin), S (Sakit), TK (Tanpa Keterangan).<br>Tanda (-) artinya pada minggu tersebut tidak ada jadwal piket.</div>';
                                     
                     tableContainer.innerHTML = tableHtml;
                 } else {
@@ -854,7 +897,9 @@
                             var h = res.history[i];
                             var stsText = h[9] || 'Hadir';
                             var bColor = stsText === 'Hadir' ? 'bg-indigo-50 text-indigo-600' : 'bg-amber-50 text-amber-600';
-                            var linkFoto = h[10] ? '<a href="'+h[10]+'" target="_blank" class="bg-emerald-50 text-emerald-600 px-2 py-1 rounded-md text-[9px] font-black"><i class="fas fa-image"></i> Cek</a>' : '';
+                            
+                            // MENGUBAH LINK MENJADI TOMBOL POPUP FOTO
+                            var linkFoto = h[10] ? '<button onclick="openImageModal(\''+h[10]+'\')" class="bg-emerald-50 text-emerald-600 px-2 py-1 rounded-md text-[9px] font-black active:scale-95 transition-all"><i class="fas fa-image"></i> Cek</button>' : '';
                             
                             hHtml += '<div class="bg-white p-4 rounded-2xl border border-gray-100 flex justify-between items-center shadow-sm">' +
                                      '<div><p class="text-[10px] font-black text-emerald-600">' + h[2] + '</p>' +
@@ -885,7 +930,9 @@
                                     var badgeColor = isHadirNormal ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700';
                                     var badgeText = isHadirNormal ? 'Hadir' : gtk.status;
                                     var stsBadge = '<br><span class="px-2 py-0.5 rounded text-[8px] font-black uppercase inline-block mt-1 ' + badgeColor + '">' + badgeText + '</span>';
-                                    var linkFoto = gtk.foto ? '<a href="'+gtk.foto+'" target="_blank" class="text-blue-500 underline font-bold text-[10px]"><i class="fas fa-image"></i> Cek</a>' : '<span class="text-gray-300">-</span>';
+                                    
+                                    // MENGUBAH LINK MENJADI TOMBOL POPUP FOTO
+                                    var linkFoto = gtk.foto ? '<button onclick="openImageModal(\''+gtk.foto+'\')" class="text-blue-500 font-bold text-[10px] active:scale-95 bg-blue-50 px-2 py-1 rounded-md"><i class="fas fa-image"></i> Cek</button>' : '<span class="text-gray-300">-</span>';
                                     
                                     hHtml += '<tr class="bg-white border-b border-gray-100"><td class="py-3 px-3 font-bold text-gray-900">' + gtk.nama + stsBadge + '</td><td class="py-3 px-3 text-center text-gray-600">' + gtk.hari + '</td><td class="py-3 px-3 text-center">' + linkFoto + '</td></tr>';
                                 } else {
@@ -944,16 +991,16 @@
                     var a = data[i];
                     var stsText = a[9] || 'Hadir';
                     var stsColor = stsText === 'Hadir' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600';
-                    var link = a[10] ? '<a href="'+a[10]+'" target="_blank" class="text-blue-500 underline text-[10px] font-bold">Foto</a>' : '-';
+                    
+                    // MENGUBAH LINK MENJADI TOMBOL POPUP FOTO
+                    var link = a[10] ? '<button onclick="openImageModal(\''+a[10]+'\')" class="bg-blue-50 text-blue-500 px-2 py-1 rounded-md text-[10px] font-bold active:scale-95"><i class="fas fa-image"></i> Cek</button>' : '-';
+                    
                     aHtml += '<tr class="'+(i % 2 === 0 ? 'bg-white' : 'bg-gray-50')+' border-b border-gray-100"><td class="py-3 px-3 font-bold text-gray-900">' + a[a.length - 1] + '</td><td class="py-3 px-3 font-bold text-gray-600">' + a[2] + '</td><td class="py-3 px-3 font-bold text-emerald-600">' + a[3] + '</td><td class="py-3 px-3 text-center"><span class="px-2 py-1 rounded-lg text-[9px] font-black uppercase '+stsColor+'">' + stsText + '</span></td><td class="py-3 px-3 text-center">' + link + '</td></tr>';
                 }
                 document.getElementById('adminAbsenceLog').innerHTML = aHtml;
             });
         }
 
-        // ===============================================
-        // FUNGSI ABSENSI (ALAMAT LENGKAP & FOTO HD MAX 1MB)
-        // ===============================================
         function startAttendance(type) {
             attType = type;
             var isGpsWajib = String(office.gpsReq).toUpperCase() !== 'OFF';
@@ -982,8 +1029,6 @@
                         
                         function drawCanvasAndSend(alamatFinal) {
                             var can = document.getElementById('canvas');
-                            
-                            // Ditingkatkan dari 640px ke 1024px (HD) agar foto lebih tajam
                             var maxW = 1024; 
                             var scale = (img.width > maxW) ? maxW / img.width : 1;
                             can.width = img.width * scale; can.height = img.height * scale;
@@ -1000,7 +1045,6 @@
                             ctx.fillText("🕒 " + days[now.getDay()] + ", " + now.toLocaleDateString('id-ID') + " - " + now.toLocaleTimeString('id-ID'), 15, can.height - 40);
                             ctx.fillText(alamatFinal, 15, can.height - 15);
                             
-                            // Kualitas diset ke 80% (Ukuran file dipastikan berada di rentang 200KB - 400KB / jauh di bawah 1MB)
                             var dataUrl = can.toDataURL('image/jpeg', 0.80);
                             showToast("📤 Mengirim absensi piket...");
                             
@@ -1016,7 +1060,6 @@
                             .then(function(data) {
                                 var finalAddr = fallbackAddr;
                                 if (data && data.display_name) {
-                                    // Memecah alamat lengkap OpenStreetMap, ambil 3 bagian (Jalan, Kelurahan, Kecamatan)
                                     var parts = data.display_name.split(",");
                                     var joined = parts.map(function(p){ return p.trim(); }).slice(0, 3).join(", ");
                                     if (joined.length > 55) joined = joined.substring(0, 52) + "...";
@@ -1061,9 +1104,6 @@
         
         function closePermitModal() { document.getElementById('permitModal').classList.replace('flex', 'hidden'); }
         
-        // ===============================================
-        // FUNGSI IZIN (FOTO HD MAX 1MB)
-        // ===============================================
         function submitPermitAction() {
             var btn = document.getElementById('btnSubmitPermit');
             var pDate = document.getElementById('pDate').value;
@@ -1083,13 +1123,12 @@
                 img.onload = function() {
                     var can = document.createElement('canvas');
                     
-                    var maxW = 1024; // Resolusi diset ke 1024px agar jernih
+                    var maxW = 1024; 
                     var scale = (img.width > maxW) ? maxW / img.width : 1;
                     can.width = img.width * scale; can.height = img.height * scale;
                     var ctx = can.getContext('2d');
                     ctx.drawImage(img, 0, 0, can.width, can.height);
                     
-                    // Kualitas 80% menjamin file selalu di bawah 1MB
                     var compressedBase64 = can.toDataURL('image/jpeg', 0.80);
                     
                     var pData = { 
